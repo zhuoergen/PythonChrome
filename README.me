@@ -1,0 +1,134 @@
+这里简单记录一下使用Python+selenium的小例子。 
+使用的版本为Python3.3以及selenium2,Windows环境（现在已经支持3.0以上的了，多处论坛博客没有更新）。 
+　　首先是软件的安装，Python不赘述了，记得设置环境变量。 
+　　下面安装selenium，如果已经安装过pip。直接运行一下命令。
+
+     pip install -U selenium
+1
+　　另一种方式，https://pypi.python.org/packages/source/s/selenium/selenium-2.52.0.tar.gz下载并解压。这里简述一下windows版本，其实Unix下也差不多，使用Wget下载一下安装。 
+　　使用命令（setup一般用于第三方模块的安装）：
+
+　　cd c:\Python3\xxxx
+　　python setup.py install
+1
+2
+　　安装过程中可能会出现ImportError: No module named setuptools，这是因为缺少setuptools模块，Python默认不安装。 
+　　在http://pypi.python.org/pypi/setuptools上面提供了各系统的安装包和安装指南，对于Windows系统，下载https://bootstrap.pypa.io/ez_setup.py自动化安装脚本。 
+　　运行： 
+　　
+
+python ez_setup.py
+1
+　　完成后再安装selenium即可。 
+　　如果你对selenium没有概念或者有其他疑问，可以参考文档。 
+　　http://selenium-python.readthedocs.org/en/latest/installation.html 
+　　这里用我自己的实例简单的讲解一下流程。 
+　　第一步先完成打开浏览器。 
+　　selenium2结合了selenium和webdriver，直接引入各个浏览器相应的驱动，打开即可，注意chrome驱动可能需要另行安装。
+
+　　from selenium import webdriver
+　　browser = webdriver.Firefox()
+　　browser.get('https://www.xxx.com')
+1
+2
+3
+　　打开网页后需要登录，F12打开浏览器调试器，小箭头选取元素，查看登录框账号和密码的属性，一般都有ID。selenium可以通过以下各个方法获取元素并进行各种操作，具体解释请看上方链接文档：
+
+find_element_by_id
+find_element_by_name
+find_element_by_xpath
+find_element_by_link_text
+find_element_by_partial_link_text
+find_element_by_tag_name
+find_element_by_class_name
+find_element_by_css_selector
+
+其中id最为有效方便，优先考虑。选取完元素之后可以通过WebDriver API调用模拟键盘的输入和鼠标的点击操作。代码如下：
+
+username="qun" 
+passwd="passwd"
+browser = webdriver.Firefox()
+browser.get('https://www.xxx.com')
+browser.implicitly_wait(10)
+elem=browser.find_element_by_id("loginFormUserName")
+elem.send_keys(username)
+elem=browser.find_element_by_id("loginFormPassword")
+elem.send_keys(passwd)
+elem=browser.find_element_by_id("loginFormSubmit")
+elem.click()
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+　　一般登录之后页面都会跳转到新的网页上，如何获取新的网页呢？这里有个窗口句柄的概念，通过切换窗口句柄来完成。注意！有时候元素在一个frame里面的时候，也需要通过swtich切换。这里出现一个wait函数（上面也有），是因为页面加载需要时间，很可能在点击之后元素才加载出来，下一节详细解释一下wait。
+
+browser.implicitly_wait(10)
+browser.switch_to_window(browser.window_handles[-1])
+1
+2
+　　之后选取需要点击的区域，这里使用　xpath定位，因为在自动化测试的过程中，很有可能元素无法通过id，name等方法定位（不少人就是不写，爱table套table，我也么办法），xpath就有了用武之地。常用的偷懒方法是Firefox安装xpath插件，右键直接获取。这里不介绍，因为不提倡，使用插件会造成代码里充斥这样的东西： 
+　　
+
+XPath（/html/body/div/div[3]/div[2]/div[4]/p[2]）
+1
+　　不到万不得已，尽可能使用元素的特征来定位，比如按钮的name。 
+或者通过父元素定位子元素。
+
+　username =browser.find_element_by_xpath("//input[@name='username']")
+　clear_button = browser.find_element_by_xpath("//form[@id='loginForm']/input[4]")
+1
+2
+　　代码如下,网上经常出现的By的用法需要引入包。
+
+from selenium.webdriver.common.by import By
+1
+　　这里使用另外一个函数，我不知道有什么区别- -。
+
+for i in range(100):
+    elem=WebDriverWait(browser, 30).until(
+        lambda x:x.find_element_by_xpath("//table[@class='aaa']"/td[1]))
+    elem.click()
+    time.sleep(20)
+    print ("click",i)
+1
+2
+3
+4
+5
+6
+　　 
+　　然后这里还要提一下wait函数，在selenium2中延迟等待分为两种，显示等待和隐式等待。 
+　　
+
+显示等待
+
+　　显式等待,就是明确的要等到某个元素的出现或者是某个元素的可点击等条件,等不到,就一直等,除非在规定的时间之内都没找到,那么就跳出Exception。
+
+　　    element = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.ID, "myDynamicElement"))
+    )
+1
+2
+3
+隐式等待 
+　　注意，隐式等待是告诉设置所有dom元素在寻找某个元素的时候，如果没立即找到，再尝试这么长时间。 
+　　
+browser.implicitly_wait(10) # seconds
+1
+　　两者的区别在于一个是自己直接管理超时对象，一个是交给webdriver去做。 
+　　当然也可以用休眠的方法干等。记得引入time包。
+
+ 　　time.sleep(20)
+1
+　　这里只是简单的演示一下用法，有许多可以改进的地方，没有封装函数，么有使用多线程并发执行多个例程。以后有需求再改进。
+--------------------- 
+作者：lijun538 
+来源：CSDN 
+原文：https://blog.csdn.net/lijun538/article/details/50695914
