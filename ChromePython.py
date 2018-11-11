@@ -1,3 +1,5 @@
+# add some explaination
+
 from selenium import webdriver
 browser = webdriver.Chrome()
 browser.get('https://www.weibo.com/login.php')
