@@ -1,0 +1,21 @@
+git init
+git add *
+git commit -m "xxx"
+git remote add origin git@github.com:xxxxxxx.git  建立名为origin的仓库
+git push -u origin master   将名为master的分支push到远程仓库中
+
+
+每次修改后：
+git add 
+git commit -m "xxxx"
+git push
+
+新建分支：
+git branch b1     新建名为b1的分支
+git checkout b1   切换到名为b1的分支上
+git push origin b1 将b1分支推送到origin仓库中
+
+
+merge分支：
+git checkout master
+git merge b1 将名称为b1的分支与当前分支合并。
